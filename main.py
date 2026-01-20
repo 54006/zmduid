@@ -179,7 +179,9 @@ class UIDQueryTool(QMainWindow):
         # 添加到分割器
         splitter.addWidget(browser_frame)
         splitter.addWidget(info_frame)
-        splitter.setSizes([900, 400])
+        splitter.setSizes([1000, 350])
+        splitter.setStretchFactor(0, 3)
+        splitter.setStretchFactor(1, 1)
         
         main_layout.addWidget(splitter)
         
