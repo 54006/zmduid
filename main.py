@@ -91,6 +91,17 @@ class UIDQueryTool(QMainWindow):
         control_layout.addWidget(self.clear_btn)
         control_layout.addStretch()
         
+        # 联系信息
+        info_label = QLabel("B站：54006o  |  终末地QQ交流群：1075769890")
+        info_label.setStyleSheet("""
+            QLabel {
+                color: #666666;
+                font-size: 12px;
+                padding: 5px 10px;
+            }
+        """)
+        control_layout.addWidget(info_label)
+        
         browser_layout.addLayout(control_layout)
         
         # 浏览器视图
