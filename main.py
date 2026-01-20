@@ -10,10 +10,10 @@ import os
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, 
     QWidget, QTextEdit, QPushButton, QLabel, QSplitter,
-    QFrame, QMessageBox
+    QFrame, QMessageBox, QToolTip
 )
+from PyQt5.QtGui import QFont, QColor, QPalette, QIcon, QDesktopServices, QPixmap, QCursor
 from PyQt5.QtCore import Qt, QUrl, pyqtSlot
-from PyQt5.QtGui import QFont, QColor, QPalette, QIcon
 from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEnginePage
 from PyQt5.QtWebEngineCore import QWebEngineUrlRequestInterceptor
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest
@@ -73,36 +73,6 @@ class UIDQueryTool(QMainWindow):
         browser_frame = QFrame()
         browser_frame.setFrameStyle(QFrame.StyledPanel)
         browser_layout = QVBoxLayout(browser_frame)
-        
-        # 浏览器控制栏
-        control_layout = QHBoxLayout()
-        
-        self.refresh_btn = QPushButton("🔄 刷新页面")
-        self.refresh_btn.clicked.connect(self.refresh_page)
-        
-        self.home_btn = QPushButton("🏠 返回首页")
-        self.home_btn.clicked.connect(self.go_home)
-        
-        self.clear_btn = QPushButton("🗑️ 清除记录")
-        self.clear_btn.clicked.connect(self.clear_logs)
-        
-        control_layout.addWidget(self.refresh_btn)
-        control_layout.addWidget(self.home_btn)
-        control_layout.addWidget(self.clear_btn)
-        control_layout.addStretch()
-        
-        # 联系信息
-        info_label = QLabel("B站：54006o  |  终末地QQ交流群：1075769890")
-        info_label.setStyleSheet("""
-            QLabel {
-                color: #666666;
-                font-size: 12px;
-                padding: 5px 10px;
-            }
-        """)
-        control_layout.addWidget(info_label)
-        
-        browser_layout.addLayout(control_layout)
         
         # 浏览器视图
         self.browser = QWebEngineView()
@@ -176,6 +146,91 @@ class UIDQueryTool(QMainWindow):
         """)
         info_layout.addWidget(self.log_display)
         
+        # 联系信息容器
+        contact_frame = QFrame()
+        contact_frame.setStyleSheet("""
+            QFrame {
+                background-color: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 5px;
+                margin-top: 10px;
+            }
+        """)
+        contact_layout = QVBoxLayout(contact_frame)
+        contact_layout.setContentsMargins(10, 10, 10, 10)
+        
+        # B站链接
+        bilibili_btn = QPushButton("📺 B站：54006o")
+        bilibili_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #fb7299;
+                color: white;
+                border: none;
+                padding: 8px 15px;
+                font-size: 12px;
+                border-radius: 4px;
+                text-align: left;
+            }
+            QPushButton:hover {
+                background-color: #e85a7e;
+            }
+        """)
+        bilibili_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        bilibili_btn.clicked.connect(lambda: QDesktopServices.openUrl(QUrl("https://space.bilibili.com/74017636")))
+        contact_layout.addWidget(bilibili_btn)
+        
+        # QQ群链接容器
+        qq_layout = QHBoxLayout()
+        
+        # QQ群按钮
+        self.qq_btn = QPushButton("💬 终末地QQ群：1075769890")
+        self.qq_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #12b7f5;
+                color: white;
+                border: none;
+                padding: 8px 15px;
+                font-size: 12px;
+                border-radius: 4px;
+                text-align: left;
+            }
+            QPushButton:hover {
+                background-color: #0ea5e0;
+            }
+        """)
+        self.qq_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        self.qq_btn.clicked.connect(lambda: QDesktopServices.openUrl(QUrl("https://qm.qq.com/q/Ksqc088ZCo")))
+        self.qq_btn.enterEvent = self.show_qq_qrcode
+        self.qq_btn.leaveEvent = self.hide_qq_qrcode
+        qq_layout.addWidget(self.qq_btn)
+        
+        # 复制群号按钮
+        copy_qq_btn = QPushButton("📋")
+        copy_qq_btn.setFixedWidth(40)
+        copy_qq_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #6c757d;
+                color: white;
+                border: none;
+                padding: 8px;
+                font-size: 12px;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #5a6268;
+            }
+        """)
+        copy_qq_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        copy_qq_btn.setToolTip("复制群号")
+        copy_qq_btn.clicked.connect(self.copy_qq_group)
+        qq_layout.addWidget(copy_qq_btn)
+        
+        contact_layout.addLayout(qq_layout)
+        info_layout.addWidget(contact_frame)
+        
+        # 加载QQ群二维码
+        self.load_qq_qrcode()
+        
         # 添加到分割器
         splitter.addWidget(browser_frame)
         splitter.addWidget(info_frame)
@@ -217,6 +272,56 @@ class UIDQueryTool(QMainWindow):
         icon_path = os.path.join(base_path, 'icon.ico')
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
+    
+    def load_qq_qrcode(self):
+        """加载QQ群二维码"""
+        if getattr(sys, 'frozen', False):
+            base_path = sys._MEIPASS
+        else:
+            base_path = os.path.dirname(os.path.abspath(__file__))
+        
+        qr_path = os.path.join(base_path, 'qq_group_qr.png')
+        if os.path.exists(qr_path):
+            self.qq_qrcode = QPixmap(qr_path).scaled(150, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        else:
+            self.qq_qrcode = None
+    
+    def show_qq_qrcode(self, event):
+        """显示QQ群二维码"""
+        if self.qq_qrcode:
+            QToolTip.showText(
+                self.qq_btn.mapToGlobal(self.qq_btn.rect().topRight()),
+                "",
+                self.qq_btn
+            )
+            # 创建自定义提示窗口
+            from PyQt5.QtWidgets import QDialog, QVBoxLayout as QVBox
+            if not hasattr(self, 'qr_dialog') or not self.qr_dialog.isVisible():
+                self.qr_dialog = QDialog(self, Qt.ToolTip | Qt.FramelessWindowHint)
+                self.qr_dialog.setStyleSheet("background-color: white; border: 2px solid #12b7f5; border-radius: 8px; padding: 10px;")
+                layout = QVBox(self.qr_dialog)
+                qr_label = QLabel()
+                qr_label.setPixmap(self.qq_qrcode)
+                layout.addWidget(qr_label)
+                title = QLabel("扫码加入QQ群")
+                title.setAlignment(Qt.AlignCenter)
+                title.setStyleSheet("color: #333; font-size: 12px; font-weight: bold;")
+                layout.addWidget(title)
+                
+                pos = self.qq_btn.mapToGlobal(self.qq_btn.rect().topRight())
+                self.qr_dialog.move(pos.x() + 10, pos.y() - 50)
+                self.qr_dialog.show()
+    
+    def hide_qq_qrcode(self, event):
+        """隐藏QQ群二维码"""
+        if hasattr(self, 'qr_dialog') and self.qr_dialog.isVisible():
+            self.qr_dialog.hide()
+    
+    def copy_qq_group(self):
+        """复制QQ群号"""
+        clipboard = QApplication.clipboard()
+        clipboard.setText("1075769890")
+        QMessageBox.information(self, "复制成功", "QQ群号 1075769890 已复制到剪贴板")
         
     def setup_browser(self):
         """设置浏览器"""

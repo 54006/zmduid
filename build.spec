@@ -6,7 +6,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('icon.ico', '.')],
+    datas=[('icon.ico', '.'), ('qq_group_qr.png', '.')],
     hiddenimports=[
         'PyQt5.QtWebEngineWidgets',
         'PyQt5.QtWebEngineCore',
